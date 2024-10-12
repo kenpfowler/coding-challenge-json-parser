@@ -45,7 +45,7 @@ export class Scanner {
       throw new Error('unterminated string');
     }
 
-    this.addToken(TokenType.STRING, this.source.substring(this.start, this.position));
+    this.addToken(TokenType.STRING, this.source.substring(this.start + 1, this.position - 1));
   }
 
   private addToken(token_type: TokenType, literal?: null | boolean | number | string) {
@@ -74,6 +74,7 @@ export class Scanner {
             this.addToken(token_type, null);
             break;
         }
+
         break;
       }
     }
