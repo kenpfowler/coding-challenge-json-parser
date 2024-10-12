@@ -1,68 +1,31 @@
-import { assertEquals } from '@std/assert';
-import { Scanner } from './scanner.ts';
-import { Parser } from './parser.ts';
+import { assertEquals, assertThrows } from '@std/assert';
+import { JsonParser } from './main.ts';
 
-Deno.test(function scanObject() {
-  const source = '{      }';
-  const scanner = new Scanner(source);
-  const tokens = scanner.scan();
+const test_files = Deno.readDirSync('./tests');
+const passing = [];
+const failing = [];
 
-  const parser = new Parser(tokens);
-  const object = parser.parse();
+for (const file of test_files) {
+  file.name.includes('pass') ? passing.push(file) : failing.push(file);
+}
 
-  assertEquals(object, {});
-});
+for (const file of passing) {
+  const content = Deno.readTextFileSync('./tests/' + file.name);
 
-Deno.test(function scanArray() {
-  const source = '[   ]';
-  const scanner = new Scanner(source);
-  const tokens = scanner.scan();
-
-  const parser = new Parser(tokens);
-  const object = parser.parse();
-
-  assertEquals(object, []);
-});
-Deno.test(function scanKeyValue() {
-  const source = '{"key": "value"}';
-  const scanner = new Scanner(source);
-  const tokens = scanner.scan();
-
-  const parser = new Parser(tokens);
-  const object = parser.parse();
-
-  assertEquals(object, { key: 'value' });
-});
-
-Deno.test(function scanKeyValues() {
-  const source = '{ "key1": true, "key2": false, "key3": null, "key4": "value", "key5": 101.101 }';
-  const scanner = new Scanner(source);
-  const tokens = scanner.scan();
-
-  const parser = new Parser(tokens);
-  const object = parser.parse();
-
-  assertEquals(object, {
-    key1: true,
-    key2: false,
-    key3: null,
-    key4: 'value',
-    key5: 101.101,
+  Deno.test(function passingTests() {
+    const parser = new JsonParser();
+    assertEquals(parser.parse(content), JSON.parse(content));
   });
-});
+}
 
-Deno.test(function scanNestedKeyValues() {
-  const source = '{ "key": "value", "key-n": 101, "key-o": { "key-o-a": "nested" }, "key-l": [] }';
-  const scanner = new Scanner(source);
-  const tokens = scanner.scan();
+for (const file of failing) {
+  const content = Deno.readTextFileSync('./tests/' + file.name);
 
-  const parser = new Parser(tokens);
-  const object = parser.parse();
-
-  assertEquals(object, {
-    key: 'value',
-    'key-n': 101,
-    'key-o': { 'key-o-a': 'nested' },
-    'key-l': [],
+  Deno.test(function failingTests() {
+    assertThrows(() => {
+      const parser = new JsonParser();
+      const json = parser.parse(content);
+      console.log(`parsed invalid json in ${file.name}`);
+    });
   });
-});
+}
