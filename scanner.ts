@@ -3,7 +3,7 @@ import { Token } from './token.ts';
 
 export class Scanner {
   private source;
-  private position = 0;
+  private current = 0;
   private start = 0;
   private line = 1;
   private tokens: Token[] = [];
@@ -18,48 +18,39 @@ export class Scanner {
   }
 
   private isAtEnd() {
-    return this.position >= this.source.length;
+    return this.current >= this.source.length;
   }
 
-  private getCharacter() {
-    return this.source.charAt(this.position++);
+  private advance() {
+    return this.source.charAt(this.current++);
   }
 
   private peek() {
     if (this.isAtEnd()) return '\0';
-    return this.source.charAt(this.position);
+    return this.source.charAt(this.current);
   }
 
   private string() {
-    let next = this.getCharacter();
-
-    while (next !== '"' && !this.isAtEnd()) {
+    while (this.advance() !== '"' && !this.isAtEnd()) {
       if (this.peek() === '\n') {
         this.line++;
       }
-
-      next = this.getCharacter();
     }
 
-    if (next !== '"') {
-      throw new Error('unterminated string');
-    }
-
-    this.addToken(TokenType.STRING, this.source.substring(this.start + 1, this.position - 1));
+    this.addToken(TokenType.STRING, this.source.substring(this.start + 1, this.current - 1));
   }
 
   private addToken(token_type: TokenType, literal?: null | boolean | number | string) {
-    const text = this.source.substring(this.start, this.position);
+    const text = this.source.substring(this.start, this.current);
     this.tokens.push(new Token(token_type, this.line, text, literal));
   }
 
   private value() {
     while (!this.isAtEnd()) {
-      this.getCharacter();
+      this.advance();
 
-      const value = this.source.substring(this.start, this.position);
+      const value = this.source.substring(this.start, this.current);
 
-      // FIXME: we would need to determine if we have n
       if (this.keywords.has(value)) {
         const token_type = this.keywords.get(value);
 
@@ -86,24 +77,24 @@ export class Scanner {
 
   private number() {
     while (this.isDigit(this.peek())) {
-      this.getCharacter();
+      this.advance();
     }
 
     if (this.peek() === '.') {
-      this.getCharacter();
+      this.advance();
 
       while (this.isDigit(this.peek())) {
-        this.getCharacter();
+        this.advance();
       }
     }
 
-    this.addToken(TokenType.NUMBER, parseFloat(this.source.substring(this.start, this.position)));
+    this.addToken(TokenType.NUMBER, parseFloat(this.source.substring(this.start, this.current)));
   }
 
   public scan() {
     while (!this.isAtEnd()) {
-      this.start = this.position;
-      const current = this.getCharacter();
+      this.start = this.current;
+      const current = this.advance();
 
       switch (current) {
         case TokenType.LEFT_BRACE:
@@ -142,10 +133,15 @@ export class Scanner {
           break;
         default:
           if (this.isDigit(current)) {
+            // first digit cannot be leading zero if there are more digits...
+            // if (current === '0' && this.isDigit(this.peek())) {
+            //   throw new Error('number cannot have leading zero');
+            // }
+
             this.number();
           } else {
             throw new Error(
-              `unexpected token ${current} on line ${this.line} - position ${this.position}`
+              `unexpected token ${current} on line ${this.line} - position ${this.current}`
             );
           }
       }
