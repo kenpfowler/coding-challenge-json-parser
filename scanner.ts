@@ -8,11 +8,31 @@ export class Scanner {
   private start = 0;
   private line = 1;
   private tokens: Token[] = [];
-  private keywords = new Map<string, TokenType>([
+  private readonly keywords = new Map<string, TokenType>([
     ['true', TokenType.TRUE],
     ['false', TokenType.FALSE],
     ['null', TokenType.NULL],
   ]);
+  /**
+   * Double Quote (\") - Inserts a double-quote character inside a double-quoted string.
+   * Single Quote (\') - Inserts a single-quote character inside a single-quoted string.
+   * Backslash (\\) - Inserts a literal backslash.
+   * Newline (\n) - Inserts a new line.
+   * Carriage Return (\r) - Moves the cursor to the beginning of the line (often used with \n for new lines on some systems).
+   * Tab (\t) - Inserts a horizontal tab.
+   * Null Character (\0) - Represents the null character, often used as a string terminator in some languages (in JavaScript, the string continues after it).
+   * Unicode (\uXXXX) - Inserts a Unicode character, where XXXX is the four-digit hexadecimal code.
+
+    UNCOMMON
+   * Backspace (\b) - Moves the cursor back one position (rarely used in modern applications).
+   * Form Feed (\f) - Advances the cursor to the next page (not commonly used).
+   * Vertical Tab (\v) - Moves the cursor down to the next vertical tab stop (rarely used).
+   */
+  // prettier-ignore
+
+  // prettier-ignore
+  private readonly escapes = ["\"", '\\', "\/", 'n', 'r', 't', 'b', "f"];
+  private readonly unicodeRegex = /[^\u0000-\u007F]/g; // Matches non-ASCII characters
 
   constructor(source: string) {
     this.source = source;
@@ -110,88 +130,76 @@ export class Scanner {
     return char === '0';
   }
 
-  // this method should throw error in the following cases
-  // [ "line\\\nbreak" ]
-  // [ "tab\\   character\\   in\\  string\\  " ]
-  // [ "line\nbreak" ]
-  // [ "Illegal backslash escape: \\x15" ]
-  // [ "\ttab\tcharacter\tin\tstring\t" ]
-  // [ "Illegal backslash escape: \\017" ]
-  private escape(char: string) {
-    if (this.unicode(char)) {
-      this.advance();
-      return;
-    }
+  private escape() {
+    const escapeChar = this.source.charAt(this.current);
 
-    if (char === '\n') {
-      JsonParser.reportError(this.line, this.current, `Unexpected line break in string '${char}'`);
-    }
-
-    // Check for tab characters within the string
-    if (char === '\t') {
-      JsonParser.reportError(this.line, this.current, 'Unexpected tab character in string');
-    }
-
-    if (char === '\\') {
-      // Check for illegal backslash escapes
-      const nextChar = this.peekNext();
-
-      // Illegal escape sequences such as \x and octal \0XX
-      if (nextChar === 'x' || (nextChar >= '0' && nextChar <= '7')) {
-        JsonParser.reportError(
-          this.line,
-          this.current,
-          `llegal backslash escape: \\${nextChar} ${this.source.substring(
-            this.start - 10,
-            this.current + 30
-          )}`
-        );
-      }
-      this.advance();
+    switch (escapeChar) {
+      // prettier-ignore
+      case '\"':
+      // prettier-ignore
+      case '\/':
+      case '\\':
+      case 'b':
+      case 'f':
+      case 'n':
+      case 'r':
+      case 't':
+        this.advance();
+        break;
+      case 'u':
+        this.unicode();
+        break;
+      default:
+        // Handle invalid escape sequence (optional)
+        throw new Error(`Invalid escape sequence: \\${escapeChar}`);
     }
   }
 
-  private unicode(char: string) {
-    const unicodeRegex = /\\u[0-9A-Fa-f]{4}/g;
-    const matches = char.match(unicodeRegex);
+  private unicode() {
+    this.advance();
 
-    return matches;
+    const hex = this.source.substring(this.current, this.current + 4);
+
+    if (!/^[0-9a-fA-F]{4}$/.test(hex)) {
+      throw new Error(`Invalid Unicode escape sequence: \\u${hex}`);
+    }
+    this.current += 4;
   }
 
   private string() {
-    console.log(this.source.charAt(this.current));
-    // while we're scanning the string we need to search for escape characters within the string.
-
-    // the backslash char indicates the start of an escape sequence '\'
-    // if only one backslash is present without an escape char this is syntax error
-    // this begs the question what is a vaild escape character.
-
-    // Double Quote (\") - Inserts a double-quote character inside a double-quoted string.
-    // Single Quote (\') - Inserts a single-quote character inside a single-quoted string.
-    // Backslash (\\) - Inserts a literal backslash.
-    // Newline (\n) - Inserts a new line.
-    // Carriage Return (\r) - Moves the cursor to the beginning of the line (often used with \n for new lines on some systems).
-    // Tab (\t) - Inserts a horizontal tab.
-    // Null Character (\0) - Represents the null character, often used as a string terminator in some languages (in JavaScript, the string continues after it).
-    // Unicode (\uXXXX) - Inserts a Unicode character, where XXXX is the four-digit hexadecimal code.
-
-    // UNCOMMON
-    // Backspace (\b) - Moves the cursor back one position (rarely used in modern applications).
-    // Form Feed (\f) - Advances the cursor to the next page (not commonly used).
-    // Vertical Tab (\v) - Moves the cursor down to the next vertical tab stop (rarely used).
-
     while (this.advance() !== '"' && !this.isAtEnd()) {
       const char = this.source.charAt(this.current - 1);
-      // prettier-ignore
-      const escapes = ['\"', "\'", '\\', '\n', "\r", "\t", "\0", "\b", "\f", "\v" ];
+
+      if (char === '\t') {
+        throw new Error('illegal tab character in string');
+      }
+
+      if (char === '\n') {
+        throw new Error('illegal line break character in string');
+      }
 
       // if the char is a valid escape character we match them until we run out
-      if (escapes.includes(char)) {
-        this.escape(char);
+      if (char === '\\') {
+        this.escape();
       }
     }
 
-    this.addToken(TokenType.STRING, this.source.substring(this.start + 1, this.current - 1));
+    this.addToken(
+      TokenType.STRING,
+      this.source
+        .substring(this.start + 1, this.current - 1)
+        .replace(/\\u([A-Fa-f0-9]{4})/g, (_match, unicodeChar) => {
+          return String.fromCharCode(parseInt(unicodeChar, 16));
+        })
+        .replace(/\\\\/g, '\\') // Double backslashes
+        .replace(/\\\//g, '/') // Escaped forward slash
+        .replace(/\\"/g, '"') // Escaped double quote
+        .replace(/\\b/g, '\b') // Backspace
+        .replace(/\\f/g, '\f') // Form feed
+        .replace(/\\n/g, '\n') // Newline
+        .replace(/\\r/g, '\r') // Carriage return
+        .replace(/\\t/g, '\t') // Tab
+    );
   }
 
   private addToken(token_type: TokenType, literal?: null | boolean | number | string) {
