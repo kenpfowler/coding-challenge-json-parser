@@ -27,7 +27,7 @@ deno run test
 
 3. create your own tests by adding new tests to the tests folder
 
-    in the tests folder create a test and name it in the following format "pass" | "fail + number + .txt
+    in the tests folder create a test and name it in the following format "pass" | "fail" + number + .txt
 
     if the test should pass, add valid json to the file
 
