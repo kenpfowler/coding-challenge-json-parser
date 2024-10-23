@@ -97,8 +97,9 @@ export class Parser {
       throw new Error('array exceeds max depth');
     }
 
+    // deno-lint-ignore no-explicit-any
     const array: any = [];
-    let token = this.tokens[this.current];
+    const token = this.tokens[this.current];
 
     switch (token.token_type) {
       case TokenType.RIGHT_BRACKET:
