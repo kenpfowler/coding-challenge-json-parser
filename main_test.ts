@@ -13,7 +13,6 @@ for (const file of passing) {
   const content = Deno.readTextFileSync('./tests/' + file.name);
 
   Deno.test(function passingTests() {
-    console.log(`parsing passing file => ${file.name}`);
     assertEquals(JsonParser.parse(content), JSON.parse(content));
   });
 }
@@ -24,7 +23,6 @@ for (const file of failing) {
   Deno.test(function failingTests() {
     assertThrows(() => {
       JsonParser.parse(content);
-      console.log(`parsed invalid json in ${file.name}`);
     });
   });
 }
