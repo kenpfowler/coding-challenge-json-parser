@@ -1,26 +1,44 @@
 # CHALLENGE: Write your own JSON Parser
 
-https://codingchallenges.fyi/challenges/challenge-json-parser
+This repo is an attempt to [implement a JSON parser according to the following spec](https://www.json.org/json-en.html).  The test files used to validate the project can be found [here](https://www.json.org/JSON_checker/)
 
-https://www.json.org/json-en.html
+Credit to Jon Crickett for the inspriation.  [Check out the challenge here](https://codingchallenges.fyi/challenges/challenge-json-parser)
+
+# Getting Started
+
+## Requirements
+
+I used deno to build this project so, if you want it to work out-of-the-box, head over to the [deno docs](https://docs.deno.com/runtime/) and download the runtime.
 
 
-https://github.com/v8/v8/blob/main/src/json/json-parser.cc
-## 
+## Steps
 
-Write Your Own wc Tool
-Welcome to the "Write Your Own wc Tool" repository! This project is a part of the coding challenges series, and it's all about creating a wc tool in Bash.
+1. clone the repo and open the project
 
-Getting Started
-Clone the Repository:
+```sh 
+git clone git@github.com:kenpfowler/coding-challenge-json-parser.git
 
-git clone https://github.com/GolluAjay/codeChallenges.git
-cd codeChallenges/write_your_own_wc_tool
-Source the Script:
+cd ./coding-challenge-json-parser.git/
+```
 
-source ccwc.sh
-Usage: Now, you can use the ccwc command along with various options. Here's an example:
+2. run the test suite
 
-Count the number of lines in a file (text.txt in this case):
-ccwc -l text.txt
-Explore other options and combinations as needed!
+```sh
+deno run test
+```
+
+all test should pass
+
+3. test the functionality by adding another test
+
+in the tests folder create a test and name it in the following format "pass" | "fail + number + .txt
+
+if the test should pass, add valid json to the file
+
+if the test should fail add invalid json to the file
+
+then run the test suite again with:
+
+```sh
+deno run test
+```
