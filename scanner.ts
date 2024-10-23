@@ -13,26 +13,6 @@ export class Scanner {
     ['false', TokenType.FALSE],
     ['null', TokenType.NULL],
   ]);
-  /**
-   * Double Quote (\") - Inserts a double-quote character inside a double-quoted string.
-   * Single Quote (\') - Inserts a single-quote character inside a single-quoted string.
-   * Backslash (\\) - Inserts a literal backslash.
-   * Newline (\n) - Inserts a new line.
-   * Carriage Return (\r) - Moves the cursor to the beginning of the line (often used with \n for new lines on some systems).
-   * Tab (\t) - Inserts a horizontal tab.
-   * Null Character (\0) - Represents the null character, often used as a string terminator in some languages (in JavaScript, the string continues after it).
-   * Unicode (\uXXXX) - Inserts a Unicode character, where XXXX is the four-digit hexadecimal code.
-
-    UNCOMMON
-   * Backspace (\b) - Moves the cursor back one position (rarely used in modern applications).
-   * Form Feed (\f) - Advances the cursor to the next page (not commonly used).
-   * Vertical Tab (\v) - Moves the cursor down to the next vertical tab stop (rarely used).
-   */
-  // prettier-ignore
-
-  // prettier-ignore
-  private readonly escapes = ["\"", '\\', "\/", 'n', 'r', 't', 'b', "f"];
-  private readonly unicodeRegex = /[^\u0000-\u007F]/g; // Matches non-ASCII characters
 
   constructor(source: string) {
     this.source = source;
@@ -120,10 +100,6 @@ export class Scanner {
   private peek() {
     if (this.isAtEnd()) return '\0';
     return this.source.charAt(this.current);
-  }
-
-  private peekNext() {
-    return this.source.charAt(this.current + 2);
   }
 
   private isZero(char: string) {
@@ -249,10 +225,6 @@ export class Scanner {
 
   private isDigit(char: string) {
     return char >= '0' && char <= '9';
-  }
-
-  private isDigitOneToNine(char: string) {
-    return char >= '1' && char <= '9';
   }
 
   private number() {
