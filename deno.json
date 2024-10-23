@@ -1,6 +1,5 @@
 {
   "tasks": {
-    "dev": "deno run --watch main.ts",
     "test": "deno test --allow-read"
   },
   "imports": {
