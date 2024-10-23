@@ -2,35 +2,36 @@ import { Parser } from './parser.ts';
 import { Scanner } from './scanner.ts';
 
 export class JsonParser {
-  private scanner: Scanner | null = null;
-  private parser: Parser | null = null;
-
-  public parse(source: string) {
-    this.scanner = new Scanner(source);
-    const tokens = this.scanner.scan();
-    this.parser = new Parser(tokens);
-    const json = this.parser.parse();
+  public static parse(source: string) {
+    const scanner = new Scanner(source);
+    const tokens = scanner.scan();
+    const parser = new Parser(tokens);
+    const json = parser.parse();
     return json;
   }
 
-  public run() {
+  public static run() {
     const filePath = Deno.args.at(0);
 
     try {
       if (filePath) {
         const file = Deno.readTextFileSync(filePath);
-        const json = this.parse(file);
+        const json = JsonParser.parse(file);
         return json;
       }
     } catch (error) {
       console.error(error);
     }
   }
+
+  public static reportError(line: number, position: number, message: string) {
+    const msg = `[line ${line}, position ${position}] ${message}`;
+    throw Error(msg);
+  }
 }
 
 function main() {
-  const parser = new JsonParser();
-  parser.run();
+  JsonParser.run();
 }
 
 main();
